@@ -1,0 +1,199 @@
+<!DOCTYPE html>
+
+<html lang="en">
+<head>
+<meta charset="utf-8"/>
+<meta content="width=device-width,initial-scale=1.0" name="viewport"/>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    html, body {
+      width: 100%;
+      height: 100%;
+      overflow: hidden;
+      background: #000;
+    }
+  </style>
+</head>
+<body>
+<!-- STITCH_THREEJS_START:ANIMATION_3 class="fixed inset-0 w-full h-full bg-transparent" -->
+<div class="fixed inset-0 w-full h-full bg-transparent" style="display:block;">
+<script src="https://ajax.googleapis.com/ajax/libs/threejs/r125/three.min.js"></script>
+<div id="threejs-container-ANIMATION_3" style="width:100%;height:100%"></div>
+<script>
+(function() {
+  const container = document.getElementById('threejs-container-ANIMATION_3');
+  const devicePixelRatio = window.devicePixelRatio || 1;
+  // Three.js interactive 3D scene: Futuristic cybernetic neural core / particle sphere responding to cursor and scroll
+const width = container.clientWidth || window.innerWidth;
+const height = container.clientHeight || window.innerHeight;
+
+const scene = new THREE.Scene();
+const camera = new THREE.PerspectiveCamera(50, width / height, 0.1, 1000);
+camera.position.z = 5;
+
+const renderer = new THREE.WebGLRenderer({ alpha: true, antialias: true });
+renderer.setSize(width, height);
+renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+container.appendChild(renderer.domElement);
+
+// Lighting
+const ambientLight = new THREE.AmbientLight(0xffffff, 0.7);
+scene.add(ambientLight);
+
+const pointLight1 = new THREE.PointLight(0x6366f1, 2.5, 50);
+pointLight1.position.set(5, 5, 5);
+scene.add(pointLight1);
+
+const pointLight2 = new THREE.PointLight(0x38bdf8, 2.5, 50);
+pointLight2.position.set(-5, -4, 4);
+scene.add(pointLight2);
+
+// Master Group
+const group = new THREE.Group();
+scene.add(group);
+
+// 1. Central Core: Geometric faceted octahedron / icosahedron with glowing wireframe
+const coreGeo = new THREE.IcosahedronGeometry(1.6, 2);
+const coreMat = new THREE.MeshPhongMaterial({
+  color: 0x181828,
+  emissive: 0x241b4b,
+  wireframe: true,
+  transparent: true,
+  opacity: 0.85,
+  shininess: 90
+});
+const coreMesh = new THREE.Mesh(coreGeo, coreMat);
+group.add(coreMesh);
+
+// Inner solid glow
+const innerGeo = new THREE.IcosahedronGeometry(1.1, 1);
+const innerMat = new THREE.MeshPhongMaterial({
+  color: 0x4f46e5,
+  emissive: 0x312e81,
+  wireframe: false,
+  transparent: true,
+  opacity: 0.6,
+  shininess: 100
+});
+const innerMesh = new THREE.Mesh(innerGeo, innerMat);
+group.add(innerMesh);
+
+// 2. Orbital Rings
+const ringGeo1 = new THREE.TorusGeometry(2.3, 0.025, 16, 100);
+const ringMat1 = new THREE.MeshBasicMaterial({ color: 0x38bdf8, transparent: true, opacity: 0.7 });
+const ring1 = new THREE.Mesh(ringGeo1, ringMat1);
+ring1.rotation.x = Math.PI / 3;
+group.add(ring1);
+
+const ringGeo2 = new THREE.TorusGeometry(2.6, 0.02, 16, 100);
+const ringMat2 = new THREE.MeshBasicMaterial({ color: 0x818cf8, transparent: true, opacity: 0.5 });
+const ring2 = new THREE.Mesh(ringGeo2, ringMat2);
+ring2.rotation.y = Math.PI / 4;
+ring2.rotation.x = Math.PI / 6;
+group.add(ring2);
+
+// 3. Surrounding Floating Particle Field
+const particlesCount = 380;
+const pCoords = new Float32Array(particlesCount * 3);
+for(let i = 0; i < particlesCount * 3; i += 3) {
+  const r = 2.4 + Math.random() * 2.5;
+  const theta = Math.random() * Math.PI * 2;
+  const phi = Math.acos((Math.random() * 2) - 1);
+  pCoords[i] = r * Math.sin(phi) * Math.cos(theta);
+  pCoords[i+1] = r * Math.sin(phi) * Math.sin(theta);
+  pCoords[i+2] = r * Math.cos(phi);
+}
+const pGeo = new THREE.BufferGeometry();
+pGeo.setAttribute('position', new THREE.BufferAttribute(pCoords, 3));
+const pMat = new THREE.PointsMaterial({
+  color: 0xa5b4fc,
+  size: 0.045,
+  transparent: true,
+  opacity: 0.8
+});
+const particles = new THREE.Points(pGeo, pMat);
+group.add(particles);
+
+// Interactive Mouse tracking & Scroll response
+let mouseX = 0;
+let mouseY = 0;
+let targetX = 0;
+let targetY = 0;
+
+function onMouseMove(event) {
+  const rect = container.getBoundingClientRect();
+  const x = event.clientX - rect.left;
+  const y = event.clientY - rect.top;
+  mouseX = (x / (rect.width || window.innerWidth) - 0.5) * 2;
+  mouseY = (y / (rect.height || window.innerHeight) - 0.5) * 2;
+}
+
+window.addEventListener('mousemove', onMouseMove, { passive: true });
+
+let scrollProgress = 0;
+function onScroll() {
+  const maxScroll = document.documentElement.scrollHeight - window.innerHeight;
+  if (maxScroll > 0) {
+    scrollProgress = window.scrollY / maxScroll;
+  }
+}
+window.addEventListener('scroll', onScroll, { passive: true });
+
+function onResize() {
+  const w = container.clientWidth || window.innerWidth;
+  const h = container.clientHeight || window.innerHeight;
+  camera.aspect = w / h;
+  camera.updateProjectionMatrix();
+  renderer.setSize(w, h);
+}
+window.addEventListener('resize', onResize);
+
+// Animation Loop
+let reqId;
+let clock = new THREE.Clock();
+
+function animate() {
+  reqId = requestAnimationFrame(animate);
+  const elapsedTime = clock.getElapsedTime();
+
+  targetX += (mouseX - targetX) * 0.05;
+  targetY += (mouseY - targetY) * 0.05;
+
+  group.rotation.y = elapsedTime * 0.35 + targetX * 0.8 + scrollProgress * Math.PI * 2;
+  group.rotation.x = Math.sin(elapsedTime * 0.25) * 0.2 + targetY * 0.6;
+  
+  ring1.rotation.z = elapsedTime * 0.4;
+  ring2.rotation.z = -elapsedTime * 0.3;
+
+  const pulse = 1 + Math.sin(elapsedTime * 2.0) * 0.05;
+  innerMesh.scale.set(pulse, pulse, pulse);
+
+  renderer.render(scene, camera);
+}
+animate();
+
+// Cleanup logic
+return function cleanup() {
+  cancelAnimationFrame(reqId);
+  window.removeEventListener('mousemove', onMouseMove);
+  window.removeEventListener('scroll', onScroll);
+  window.removeEventListener('resize', onResize);
+  renderer.dispose();
+  coreGeo.dispose();
+  coreMat.dispose();
+  innerGeo.dispose();
+  innerMat.dispose();
+  ringGeo1.dispose();
+  ringMat1.dispose();
+  ringGeo2.dispose();
+  ringMat2.dispose();
+  pGeo.dispose();
+  pMat.dispose();
+};
+})();
+</script>
+</div>
+<!-- STITCH_THREEJS_END:ANIMATION_3 -->
+</body>
+</html>
